@@ -2,6 +2,8 @@
 
 import pathlib
 from typing import List, Dict, Any
+
+from PIL import Image
 from tinytag import TinyTag, TinyTagException
 
 from hibiki import utils
@@ -26,6 +28,12 @@ class CoverArt:
 
         :return:
         """
+        try:
+            img = Image.open(self.__file_path)
+            self.__width, self.__height = img.size
+        except IOError as e:
+            # TODO: properly handle this exception
+            raise ImageFormatNotSupported
 
         self.__file_hash = utils.get_file_partial_hash(self.__file_path)
 
@@ -51,7 +59,9 @@ class CoverArt:
         :param other:
         :return:
         """
-        return self.__file_path == other.__file_path
+        if not isinstance(other, CoverArt):
+            return False
+        return self.file_path == other.file_path
 
     def as_dict(self) -> Dict[str, Any]:
         """
@@ -63,6 +73,7 @@ class CoverArt:
         }
 
         return result
+
 
 class Track:
     """
@@ -83,7 +94,10 @@ class Track:
         "cover.jpeg",
         "folder.png",
         "folder.jpg",
-        "folder.jpeg"
+        "folder.jpeg",
+        "front.png",
+        "front.jpg",
+        "front.jpeg"
     ]
 
     def __init__(self, file_path: pathlib.Path):
@@ -113,16 +127,19 @@ class Track:
 
         :return: None
         """
-        if TinyTag.is_supported(self.__file_path):
+        if not TinyTag.is_supported(str(self.__file_path)):
             # TODO: fallback to ffprobe?
             raise AudioFormatNotSupported
-
-        metadata = TinyTag.get(self.__file_path)
-        self.__title = metadata.title
-        self.__album = metadata.album
-        self.__track = metadata.track
-        self.__filesize = metadata.filesize
-        self.__year = metadata.year
+        try:
+            metadata = TinyTag.get(str(self.__file_path))
+            self.__title = metadata.title
+            self.__album = metadata.album
+            self.__track = metadata.track
+            self.__filesize = metadata.filesize
+            self.__year = metadata.year
+        except TinyTagException as _:
+            # TODO: Properly handle this exception
+            raise AudioFormatNotSupported
 
     def __populate_cover_art(self):
         self.__cover_art = None
@@ -182,7 +199,8 @@ class Track:
         }
 
         return result
-        
+
+
 class Album:
     """
     Class representing an album, or more formally, a collection of tracks and
@@ -196,8 +214,9 @@ class Album:
         self.__title = title
 
         self.__tracks = []
-        for track in tracks:
-            self.add_track(track)
+        if tracks:
+            for track in tracks:
+                self.add_track(track)
 
     @property
     def title(self) -> str:
@@ -245,6 +264,10 @@ class Album:
         }
 
         return result
+
+
+class ImageFormatNotSupported(Exception):
+    pass
 
 
 class AudioFormatNotSupported(Exception):
