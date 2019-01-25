@@ -18,3 +18,14 @@ def get_file_partial_hash(file_path: pathlib.Path) -> str:
         buffer = f.read(PARTIAL_HASH_PORTION)
 
     return hashlib.md5(buffer).hexdigest()
+
+
+def get_str_md5(s: str) -> str:
+    """
+
+    :param s:
+    :return:
+    """
+
+    buffer = s.encode("utf-8")
+    return hashlib.md5(buffer).hexdigest()

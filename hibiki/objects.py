@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import pathlib
-from typing import List
+from typing import List, Dict, Any
 from tinytag import TinyTag, TinyTagException
 
 from hibiki import utils
@@ -53,6 +53,16 @@ class CoverArt:
         """
         return self.__file_path == other.__file_path
 
+    def as_dict(self) -> Dict[str, Any]:
+        """
+
+        :return:
+        """
+        result = {
+            "file_hash": self.file_hash
+        }
+
+        return result
 
 class Track:
     """
@@ -112,6 +122,7 @@ class Track:
         self.__album = metadata.album
         self.__track = metadata.track
         self.__filesize = metadata.filesize
+        self.__year = metadata.year
 
     def __populate_cover_art(self):
         self.__cover_art = None
@@ -153,7 +164,25 @@ class Track:
     def filesize(self):
         return self.__filesize
 
+    @property
+    def year(self):
+        return self.__year
 
+    def as_dict(self) -> Dict[str, Any]:
+        """
+
+        :return:
+        """
+
+        result = {
+            "file_hash": self.file_hash,
+            "album": self.album,
+            "title": self.title,
+            "track": self.track,
+        }
+
+        return result
+        
 class Album:
     """
     Class representing an album, or more formally, a collection of tracks and
@@ -165,7 +194,10 @@ class Album:
 
         """
         self.__title = title
-        self.__tracks = tracks or []
+
+        self.__tracks = []
+        for track in tracks:
+            self.add_track(track)
 
     @property
     def title(self) -> str:
@@ -179,7 +211,7 @@ class Album:
     def tracks(self) -> List[Track]:
         return self.__tracks
 
-    def add_tracks(self, track: Track) -> None:
+    def add_track(self, track: Track) -> None:
         """
 
         :param track:
@@ -201,7 +233,18 @@ class Album:
             else:
                 return None
 
-    pass
+    def as_dict(self) -> Dict[str, Dict]:
+        """
+        Converting self into a dictionary suitable for use with JSON/YAML
+        
+        :return: Dictionary representation of self 
+        """
+        result = {
+            "tracks": [track.as_dict() for track in self.tracks],
+            "cover_art": self.cover_art.to_dict()
+        }
+
+        return result
 
 
 class AudioFormatNotSupported(Exception):
