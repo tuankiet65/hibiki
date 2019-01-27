@@ -193,6 +193,7 @@ class Track:
 
         result = {
             "file_hash": self.file_hash,
+            "file_path": str(self.file_path),
             "album": self.album,
             "title": self.title,
             "track": self.track,
@@ -200,6 +201,10 @@ class Track:
 
         return result
 
+
+class TranscodedTrack(Track):
+    self.__transcode_path: pathlib.Path = None
+    self.__transcode_hash: pathlib.Path = None
 
 class Album:
     """
@@ -259,8 +264,9 @@ class Album:
         :return: Dictionary representation of self 
         """
         result = {
+            "title": self.title,
             "tracks": [track.as_dict() for track in self.tracks],
-            "cover_art": self.cover_art.to_dict()
+            "cover_art": None if self.cover_art is None else self.cover_art.as_dict()
         }
 
         return result

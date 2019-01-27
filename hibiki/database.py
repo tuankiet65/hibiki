@@ -1,13 +1,11 @@
 #!/usr/bin/env python3
 
 import abc
-import json
 import pathlib
-
 from typing import Dict, Any
-from hibiki.objects import Album, Track
 
 from hibiki import utils
+from hibiki.objects import Album, Track, AudioFormatNotSupported
 
 
 class Database(abc.ABC):
@@ -31,7 +29,7 @@ class Database(abc.ABC):
         album_id = self.__get_album_id(track)
         if album_id not in self.__albums:
             self.__albums[album_id] = Album(track.album)
-            self.__albums[album_id].add_track(track)
+        self.__albums[album_id].add_track(track)
 
     def as_dict(self) -> Dict[str, Dict]:
         result = {}
@@ -51,9 +49,16 @@ class LocalDatabase(Database):
         :param path:
         :return:
         """
-        pass
-
-    pass
+        for file in path.glob("**/*"):
+            if not file.is_file():
+                continue
+            try:
+                track = Track(file)
+                self.add_track(track)
+                print(f"Adding track '{track.title}', album '{track.album}'")
+            except AudioFormatNotSupported:
+                # TODO: use logging instead
+                print(f"WARNING: file not supported, ignoring: {file}.")
 
 
 class RemoteDatabase(Database):
@@ -80,9 +85,28 @@ class RemoteDatabase(Database):
         pass
 
     def as_dict(self) -> Dict[str, Any]:
+        """
+
+        :return:
+        """
         result = {
             "encoder": self.__encoder_settings.to_dict(),
             "albums": super().as_dict()
         }
 
         return result
+
+    def verify(self):
+        """
+
+        :return:
+        """
+        pass
+
+    def delete(self, track_id):
+        """
+
+        :param track_id:
+        :return:
+        """
+        pass

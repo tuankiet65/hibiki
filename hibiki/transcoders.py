@@ -2,15 +2,19 @@
 
 import abc
 import enum
-import ffmpeg
 import pathlib
+
+import ffmpeg
+
 
 class BitrateMode(enum.Enum):
     CBR = "cbr"
     VBR = "vbr"
 
+
 class TranscodingError(Exception):
     pass
+
 
 class Transcoder(abc.ABC):
     """
@@ -45,19 +49,25 @@ class Transcoder(abc.ABC):
         """
         pass
 
+
 class FFmpegOpusTranscoder(Transcoder):
     def __init__(self,
+                 ffmpeg_path: pathlib.Path = None,
                  bitrate_mode: BitrateMode = BitrateMode.VBR,
                  bitrate: int = 128,
                  compression_level: int = 10):
         """
 
+        :param ffmpeg_path: Path to FFmpeg executable
         :param bitrate_mode: Bitrate mode, can be BitrateMode.CBR (corresponds to hard-cbr) or BitrateMode.VBR
         :param bitrate: Bitrate, expresses in kilobits
         :param compression_level: (>= 0, <= 10) Algorithm complexity, 0 = faster, lower quality, 10 = slower, best
         """
         super().__init__()
 
+        self.ffmpeg_path = ffmpeg_path
+        if self.ffmpeg_path is None:
+            self.ffmpeg_path = autodetect_ffmpeg_path()
         self.bitrate_mode = bitrate_mode
         self.bitrate = bitrate
         self.compression_level = compression_level
@@ -76,26 +86,38 @@ class FFmpegOpusTranscoder(Transcoder):
 
         stream = ffmpeg.input(src)
         stream = ffmpeg.output(dst,
-                               vbr = {'on' if self.bitrate_mode == BitrateMode.VBR else 'off'},
-                               audio_bitrate = f"{self.bitrate}k",
-                               compression_level = f"{self.compression_level}")
+                               vbr={'on' if self.bitrate_mode == BitrateMode.VBR else 'off'},
+                               audio_bitrate=f"{self.bitrate}k",
+                               compression_level=f"{self.compression_level}")
 
         return dst
+
 
 class FFmpegNativeAacTranscoder(Transcoder):
     pass
 
+
 class FFmpegFdkAacTranscoder(Transcoder):
     pass
+
 
 class FFmpegLameTranscoder(Transcoder):
     pass
 
+
 class FFmpegVorbisTranscoder(Transcoder):
     pass
+
 
 class NullTranscoder(Transcoder):
     """
     This transcoder does not perform any transcoding operations, rather it just copies file from src to dst
     """
     pass
+
+def autodetect_ffmpeg_path(required_encoders: List[str] = None):
+    """
+
+    :param required_encoders:
+    :return:
+    """
